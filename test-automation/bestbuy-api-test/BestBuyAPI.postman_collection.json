@@ -1,0 +1,1872 @@
+{
+	"info": {
+		"_postman_id": "e806325b-7f73-41ca-a1a5-0dca3451b8a7",
+		"name": "BestBuyAPI",
+		"description": "A sample dataset and API for you to experiment with.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "products",
+			"item": [
+				{
+					"name": "Return all products - no filters",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();",
+									"",
+									"pm.environment.set(\"total_no_items\", jsonData.total);",
+									"",
+									"pm.test(\"Status code is 200\", () => {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Products Scheme is valid\", () => {",
+									"    const productsScheme = {",
+									"        \"type\": \"object\",",
+									"        \"properties\": {",
+									"                \"total\": {\"type\": \"integer\"},",
+									"                \"limit\": {\"type\": \"integer\"},",
+									"                \"skip\": {\"type\": \"integer\"},",
+									"                \"data\": {\"type\": \"array\"}",
+									"        }",
+									"    };",
+									"    ",
+									"    const isValidScheme = tv4.validate(jsonData, productsScheme, true, true);",
+									"    pm.expect(isValidScheme).to.be.true;",
+									"});",
+									"",
+									"pm.test(\"Product data is available\", () => {",
+									"    pm.expect(jsonData.data.length).to.not.equal(0);",
+									"});",
+									"",
+									"pm.test(\"Default page limit is correct\", () => {",
+									"    pm.expect(jsonData.limit).to.equal(10);",
+									"});",
+									"",
+									"pm.test(\"Default skip is correct\", () => {",
+									"   pm.expect(jsonData.skip).to.equal(0); ",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3030/products",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"products"
+							]
+						},
+						"description": "Returns all products that match the given filter criteria. If no filters are included, defaults to returning a paginated list of all products."
+					},
+					"response": []
+				},
+				{
+					"name": "Return all products - limit output and skip",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Returned values of skip and limit are correct\", () => {",
+									"    pm.expect(jsonData.skip).to.equal(Math.abs(data.skip));",
+									"    pm.expect(jsonData.limit).to.equal(Math.abs(data.limit));",
+									"});",
+									"",
+									"if(data.skip === 0 && data.limit === 0) {",
+									"    pm.test(\"Product data should be empty when limit is set to zero\", () => {",
+									"       pm.expect(jsonData.data.length).to.equal(0); ",
+									"    });",
+									"} else {",
+									"    pm.test(\"Request returns corrent quantity of products\", () => {",
+									"       pm.expect(jsonData.data.length).to.equal(Math.abs(data.limit));",
+									"    });",
+									"    ",
+									"    pm.test(\"Expected first product id is correct\", () => {",
+									"        const expectedId = pm.environment.get(\"expected_first_id\");",
+									"        console.log(\"expectedId \" + expectedId);",
+									"        pm.expect(jsonData.data[0].id).to.equal(expectedId);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if(data.skip !== 0 && data.limit !== 0) {",
+									"  pm.sendRequest(\"http://localhost:3030/products\", (err, response) => {",
+									"        const jsonData = response.json();",
+									"        ",
+									"        // Negative value of skip is translated into positive",
+									"        const positiveSkip = Math.abs(data.skip);",
+									"        const expectedFirstId = jsonData.data[positiveSkip].id;",
+									"        pm.environment.set(\"expected_first_id\", expectedFirstId);",
+									"    });  ",
+									"}",
+									"",
+									"",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3030/products?$limit={{limit}}&$skip={{skip}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"products"
+							],
+							"query": [
+								{
+									"key": "$limit",
+									"value": "{{limit}}"
+								},
+								{
+									"key": "$skip",
+									"value": "{{skip}}"
+								}
+							]
+						},
+						"description": "Returns all products that match the given filter criteria. If no filters are included, defaults to returning a paginated list of all products."
+					},
+					"response": []
+				},
+				{
+					"name": "Create a new product",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();",
+									"const productData = JSON.parse(pm.environment.get(\"product_data\"));",
+									"",
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Product data schema is valid', function() {",
+									"    const schema = {",
+									"            \"properties\": {",
+									"                \"id\": {\"type\": \"integer\"},",
+									"                \"name\": {\"type\": \"string\"},",
+									"                \"type\": {\"type\": \"string\"},",
+									"                \"price\": {\"type\": \"integer\"},",
+									"                \"upc\": {\"type\": \"string\"},",
+									"                \"shipping\": {\"type\": \"integer\"},",
+									"                \"description\": {\"type\": \"string\"},",
+									"                \"manufacturer\": {\"type\": \"string\"},",
+									"                \"model\": {\"type\": \"string\"},",
+									"                \"url\": {\"type\": \"string\"},",
+									"                \"createdAt\": {\"type\": \"string\"},",
+									"                \"updatedAt\": {\"type\": \"string\"}",
+									"            }",
+									"        };",
+									"    pm.expect(tv4.validate({name: data.name}, schema)).to.be.true;",
+									"    pm.expect(tv4.validate({type: data.type}, schema)).to.be.true;",
+									"    pm.expect(tv4.validate({upc: data.upc}, schema)).to.be.true;",
+									"    pm.expect(tv4.validate({shipping: data.shipping}, schema)).to.be.true;",
+									"    pm.expect(tv4.validate({description: data.description}, schema)).to.be.true;",
+									"    pm.expect(tv4.validate({manufacturer: data.manufacturer}, schema)).to.be.true;",
+									"    pm.expect(tv4.validate({model: data.model}, schema)).to.be.true;",
+									"    pm.expect(tv4.validate({url: data.url}, schema)).to.be.true;",
+									"});",
+									"",
+									"",
+									"pm.test(\"Responce contains product id\", () => {",
+									"    pm.expect(jsonData.id).to.not.equal(null);",
+									"});",
+									"",
+									"pm.test(\"Response contains correct price\", () => {",
+									"    // tv4 fails to validate float numbers",
+									"    // made a separate check for its",
+									"    pm.expect(jsonData.price).to.equal(data.price);",
+									"});",
+									"",
+									"pm.environment.set(\"product_id\", jsonData.id);",
+									"",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const productData = {",
+									"    \"name\": data.name,",
+									"    \"type\": data.type,",
+									"    \"price\": data.price,",
+									"    \"shipping\": data.shipping,",
+									"    \"upc\": data.upc,",
+									"    \"description\": data.description,",
+									"    \"manufacturer\": data.manufacturer,",
+									"    \"model\": data.model,",
+									"    \"url\": data.url",
+									"}",
+									"",
+									"console.log(JSON.stringify(productData));",
+									"pm.environment.set(\"product_data\", JSON.stringify(productData));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{product_data}}"
+						},
+						"url": {
+							"raw": "http://localhost:3030/products",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"products"
+							]
+						},
+						"description": "Creates a new product"
+					},
+					"response": []
+				},
+				{
+					"name": "Select product by id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Product data schema is valid', function() {",
+									"    const schema = {",
+									"            \"properties\": {",
+									"                \"id\": {\"type\": \"integer\"},",
+									"                \"name\": {\"type\": \"string\"},",
+									"                \"type\": {\"type\": \"string\"},",
+									"                \"price\": {\"type\": \"integer\"},",
+									"                \"upc\": {\"type\": \"string\"},",
+									"                \"shipping\": {\"type\": \"integer\"},",
+									"                \"description\": {\"type\": \"string\"},",
+									"                \"manufacturer\": {\"type\": \"string\"},",
+									"                \"model\": {\"type\": \"string\"},",
+									"                \"url\": {\"type\": \"string\"},",
+									"                \"createdAt\": {\"type\": \"string\"},",
+									"                \"updatedAt\": {\"type\": \"string\"},",
+									"                \"categories\": {\"type\": \"array\"}",
+									"            }",
+									"        };",
+									"    ",
+									"    pm.expect(tv4.validate({id: pm.environment.get(\"product_id\")}, schema)).to.be.true;    ",
+									"    pm.expect(tv4.validate({name: data.name}, schema)).to.be.true;",
+									"    pm.expect(tv4.validate({type: data.type}, schema)).to.be.true;",
+									"    pm.expect(tv4.validate({upc: data.upc}, schema)).to.be.true;",
+									"    pm.expect(tv4.validate({shipping: data.shipping}, schema)).to.be.true;",
+									"    pm.expect(tv4.validate({description: data.description}, schema)).to.be.true;",
+									"    pm.expect(tv4.validate({manufacturer: data.manufacturer}, schema)).to.be.true;",
+									"    pm.expect(tv4.validate({model: data.model}, schema)).to.be.true;",
+									"    pm.expect(tv4.validate({url: data.url}, schema)).to.be.true;",
+									"});",
+									"",
+									"pm.test(\"Response contains correct price\", () => {",
+									"    // tv4 fails to validate float numbers",
+									"    // made a separate check for its",
+									"    pm.expect(jsonData.price).to.equal(data.price);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3030/products/:id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"products",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{product_id}}"
+								}
+							]
+						},
+						"description": "Returns a product based on an ID,"
+					},
+					"response": []
+				},
+				{
+					"name": "Update a product based on ID",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const productDataUpdate = {",
+									"    \"name\": data.name + \" Updated\",",
+									"    \"type\": data.type + \" Updated\",",
+									"    \"price\": data.priceUpdated,",
+									"    \"shipping\": data.shippingUpdated,",
+									"    \"upc\": data.upc + \"456\",",
+									"    \"description\": data.description + \" Updated\",",
+									"    \"manufacturer\": data.manufacturer + \" Updated\",",
+									"    \"model\": data.model + \" Updated\",",
+									"    \"url\": data.url + \"Updated\",",
+									"}",
+									"",
+									"console.log(JSON.stringify(productDataUpdate));",
+									"pm.environment.set(\"product_data\", JSON.stringify(productDataUpdate));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Product data is updated\", () => {",
+									"    const schema = {",
+									"            \"properties\": {",
+									"                \"id\": {\"type\": \"integer\"},",
+									"                \"name\": {\"type\": \"string\"},",
+									"                \"type\": {\"type\": \"string\"},",
+									"                \"price\": {\"type\": \"integer\"},",
+									"                \"upc\": {\"type\": \"string\"},",
+									"                \"shipping\": {\"type\": \"integer\"},",
+									"                \"description\": {\"type\": \"string\"},",
+									"                \"manufacturer\": {\"type\": \"string\"},",
+									"                \"model\": {\"type\": \"string\"},",
+									"                \"url\": {\"type\": \"string\"},",
+									"                \"createdAt\": {\"type\": \"string\"},",
+									"                \"updatedAt\": {\"type\": \"string\"},",
+									"                \"categories\": {\"type\": \"array\"}",
+									"            }",
+									"        };",
+									"    ",
+									"    pm.expect(tv4.validate({id: pm.environment.get(\"product_id\")}, schema)).to.be.true;    ",
+									"    pm.expect(tv4.validate({name: data.name + \" Updated\"}, schema)).to.be.true;",
+									"    pm.expect(tv4.validate({type: data.type + \" Updated\"}, schema)).to.be.true;",
+									"    pm.expect(tv4.validate({upc: data.upc + \"456\"}, schema)).to.be.true;",
+									"    pm.expect(tv4.validate({shipping: data.shippingUpdated}, schema)).to.be.true;",
+									"    pm.expect(tv4.validate({description: data.description + \" Updated\",}, schema)).to.be.true;",
+									"    pm.expect(tv4.validate({manufacturer: data.manufacturer + \" Updated\"}, schema)).to.be.true;",
+									"    pm.expect(tv4.validate({model: data.model + \" Updated\",}, schema)).to.be.true;",
+									"    pm.expect(tv4.validate({url: data.url + \"Updated\"}, schema)).to.be.true;",
+									"});",
+									"",
+									"pm.test(\"Response contains correct price\", () => {",
+									"    // tv4 fails to validate float numbers",
+									"    // made a separate check for its",
+									"    pm.expect(pm.response.json().price).to.equal(data.priceUpdated);",
+									"});",
+									"",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{product_data}}"
+						},
+						"url": {
+							"raw": "http://localhost:3030/products/:id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"products",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{product_id}}"
+								}
+							]
+						},
+						"description": "Updates a product based on an ID,"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a single product based on the ID supplied",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Deleted product cannot be found\", () => {",
+									"    const productID = pm.environment.get(\"product_id\");",
+									"    pm.sendRequest(`http://localhost:3030/products/${productID}`, (err, response) => {",
+									"       pm.expect(response).to.have.status(404);",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3030/products/:id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"products",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{product_id}}"
+								}
+							]
+						},
+						"description": "Deletes a single product based on the ID supplied"
+					},
+					"response": []
+				}
+			],
+			"description": "Folder for products"
+		},
+		{
+			"name": "stores",
+			"item": [
+				{
+					"name": "Returns all stores - no filters",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();",
+									"",
+									"pm.environment.set(\"total_no_items\", jsonData.total);",
+									"",
+									"pm.test(\"Status code is 200\", () => {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Stores Scheme is valid\", () => {",
+									"    const storesScheme = {",
+									"        \"type\": \"object\",",
+									"        \"properties\": {",
+									"                \"total\": {\"type\": \"integer\"},",
+									"                \"limit\": {\"type\": \"integer\"},",
+									"                \"skip\": {\"type\": \"integer\"},",
+									"                \"data\": {\"type\": \"array\"}",
+									"        }",
+									"    };",
+									"    ",
+									"    const isValidScheme = tv4.validate(jsonData, storesScheme, true, true);",
+									"    pm.expect(isValidScheme).to.be.true;",
+									"});",
+									"",
+									"pm.test(\"Stores data is available\", () => {",
+									"    pm.expect(jsonData.data.length).to.not.equal(0);",
+									"});",
+									"",
+									"pm.test(\"Default page limit is correct\", () => {",
+									"    pm.expect(jsonData.limit).to.equal(10);",
+									"});",
+									"",
+									"pm.test(\"Default skip is correct\", () => {",
+									"   pm.expect(jsonData.skip).to.equal(0); ",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3030/stores",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"stores"
+							]
+						},
+						"description": "Returns all stores that match the given filter criteria. If no filters are included, defaults to returning a paginated list of all stores."
+					},
+					"response": []
+				},
+				{
+					"name": "Returns all stores - limit output and skip",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if(data.skip !== 0 && data.limit !== 0) {",
+									"  pm.sendRequest(\"http://localhost:3030/stores\", (err, response) => {",
+									"        const jsonData = response.json();",
+									"        ",
+									"        // Negative value of skip is translated into positive",
+									"        const positiveSkip = Math.abs(data.skip);",
+									"        const expectedFirstId = jsonData.data[positiveSkip].id;",
+									"        pm.environment.set(\"expected_first_id\", expectedFirstId);",
+									"    });  ",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Returned values of skip and limit are correct\", () => {",
+									"    pm.expect(jsonData.skip).to.equal(Math.abs(data.skip));",
+									"    pm.expect(jsonData.limit).to.equal(Math.abs(data.limit));",
+									"});",
+									"",
+									"if(data.skip === 0 && data.limit === 0) {",
+									"    pm.test(\"Stores data should be empty when limit is set to zero\", () => {",
+									"       pm.expect(jsonData.data.length).to.equal(0); ",
+									"    });",
+									"} else {",
+									"    pm.test(\"Request returns corrent quantity of stores\", () => {",
+									"       pm.expect(jsonData.data.length).to.equal(Math.abs(data.limit));",
+									"    });",
+									"    ",
+									"    pm.test(\"Expected first store id is correct\", () => {",
+									"        const expectedId = pm.environment.get(\"expected_first_id\");",
+									"        console.log(\"expectedId \" + expectedId);",
+									"        pm.expect(jsonData.data[0].id).to.equal(expectedId);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3030/stores?$limit={{limit}}&$skip={{skip}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"stores"
+							],
+							"query": [
+								{
+									"key": "$limit",
+									"value": "{{limit}}"
+								},
+								{
+									"key": "$skip",
+									"value": "{{skip}}"
+								}
+							]
+						},
+						"description": "Returns all stores that match the given filter criteria. If no filters are included, defaults to returning a paginated list of all stores."
+					},
+					"response": []
+				},
+				{
+					"name": "Create a new store",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();",
+									"",
+									"pm.environment.set(\"store_id\", jsonData.id);",
+									"",
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Total number of stores is incremented\", () => {",
+									"    pm.sendRequest(\"http://localhost:3030/stores\", function (err, response) {",
+									"       const jsonData = response.json();",
+									"       console.log(response.json());",
+									"       ",
+									"       const currentNoOfStores = jsonData.total;",
+									"       console.log(\"currentNoOfStores \" + currentNoOfStores);",
+									"       pm.environment.set(\"total_no_items\", currentNoOfStores);",
+									"       pm.expect(pm.environment.get(\"total_no_items\")).to.equal(currentNoOfStores);",
+									"    });",
+									"});",
+									"",
+									"pm.test(\"Response data is correct\", () => {",
+									"   const storeData = {",
+									"       \"properties\": {",
+									"           \"id\": {\"type\": \"integer\"},",
+									"            \"name\": \"New Store\",",
+									"            \"type\": \"BigBox\",",
+									"            \"address\": \"123 Fake St\",",
+									"            \"address2\": \"\",",
+									"            \"city\": \"Springfield\",",
+									"            \"state\": \"MN\",",
+									"            \"zip\": \"55123\",",
+									"            \"lat\": 44.969658,",
+									"            \"lng\": -93.449539,",
+									"            \"hours\": \"Mon: 10-9; Tue: 10-9; Wed: 10-9; Thurs: 10-9; Fri: 10-9; Sat: 10-9; Sun: 10-8\",",
+									"            \"updatedAt\": {\"type\": \"string\"},",
+									"            \"createdAt\": {\"type\": \"string\"}",
+									"       }",
+									"   };",
+									"   console.log(\"jsonData \", jsonData);",
+									"    const isValidScheme = tv4.validate(jsonData, storeData, true, true);",
+									"    pm.expect(isValidScheme).to.be.true; ",
+									"   ",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{      \n\t  \"name\": \"New Store\",\n      \"type\": \"BigBox\",\n      \"address\": \"123 Fake St\",\n      \"address2\": \"\",\n      \"city\": \"Springfield\",\n      \"state\": \"MN\",\n      \"zip\": \"55123\",\n      \"lat\": 44.969658,\n      \"lng\": -93.449539,\n      \"hours\": \"Mon: 10-9; Tue: 10-9; Wed: 10-9; Thurs: 10-9; Fri: 10-9; Sat: 10-9; Sun: 10-8\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3030/stores",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"stores"
+							]
+						},
+						"description": "Creates a new store"
+					},
+					"response": []
+				},
+				{
+					"name": "Return a store based on store ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response data is correct\", () => {",
+									"    const jsonData = pm.response.json();",
+									"   const storeData = {",
+									"       \"properties\": {",
+									"           \"id\": {\"type\": \"integer\"},",
+									"            \"name\": \"New Store\",",
+									"            \"type\": \"BigBox\",",
+									"            \"address\": \"123 Fake St\",",
+									"            \"address2\": \"\",",
+									"            \"city\": \"Springfield\",",
+									"            \"state\": \"MN\",",
+									"            \"zip\": \"55123\",",
+									"            \"lat\": 44.969658,",
+									"            \"lng\": -93.449539,",
+									"            \"hours\": \"Mon: 10-9; Tue: 10-9; Wed: 10-9; Thurs: 10-9; Fri: 10-9; Sat: 10-9; Sun: 10-8\",",
+									"            \"updatedAt\": {\"type\": \"string\"},",
+									"            \"createdAt\": {\"type\": \"string\"},",
+									"            \"services\": {\"type\": \"array\"}",
+									"       }",
+									"   };",
+									"   console.log(\"jsonData \", jsonData);",
+									"    const isValidScheme = tv4.validate(jsonData, storeData, true, true);",
+									"    pm.expect(isValidScheme).to.be.true; ",
+									"   ",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3030/stores/:id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"stores",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{store_id}}"
+								}
+							]
+						},
+						"description": "Returns a store based on store ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Update a store based on store ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response data is correct\", () => {",
+									"    const jsonData = pm.response.json();",
+									"   const storeData = {",
+									"       \"properties\": {",
+									"           \"id\": {\"type\": \"integer\"},",
+									"            \"name\": \"New Store Updated\",",
+									"            \"type\": \"BigBox Updated\",",
+									"            \"address\": \"666 Fake St\",",
+									"            \"address2\": \"\",",
+									"            \"city\": \"South Park\",",
+									"            \"state\": \"CO\",",
+									"            \"zip\": \"13666\",",
+									"            \"lat\": -44.969658,",
+									"            \"lng\": 93.449539,",
+									"            \"hours\": \"Howdyho!\",",
+									"            \"updatedAt\": {\"type\": \"string\"},",
+									"            \"createdAt\": {\"type\": \"string\"}",
+									"       }",
+									"   };",
+									"   console.log(\"jsonData \", jsonData);",
+									"    const isValidScheme = tv4.validate(jsonData, storeData, true, true);",
+									"    pm.expect(isValidScheme).to.be.true; ",
+									"   ",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{      \n\t  \"name\": \"New Store Updated\",\n      \"type\": \"BigBox Updated\",\n      \"address\": \"666 Fake St\",\n      \"address2\": \"\",\n      \"city\": \"South Park\",\n      \"state\": \"CO\",\n      \"zip\": \"13666\",\n      \"lat\": -44.969658,\n      \"lng\": 93.449539,\n      \"hours\": \"Howdyho!\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3030/stores/:id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"stores",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{store_id}}"
+								}
+							]
+						},
+						"description": "Updates a store based on store ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a single store based on the ID supplied",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Deleted product cannot be found\", () => {",
+									"    const storeId = pm.environment.get(\"product_id\");",
+									"    pm.sendRequest(`http://localhost:3030/products/${storeId}`, (err, response) => {",
+									"       pm.expect(response).to.have.status(404);",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3030/stores/:id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"stores",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{store_id}}"
+								}
+							]
+						},
+						"description": "Deletes a single store based on the ID supplied"
+					},
+					"response": []
+				}
+			],
+			"description": "Folder for stores"
+		},
+		{
+			"name": "services",
+			"item": [
+				{
+					"name": "Returns all services",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();",
+									"",
+									"pm.environment.set(\"total_no_items\", jsonData.total);",
+									"",
+									"pm.test(\"Status code is 200\", () => {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Stores Scheme is valid\", () => {",
+									"    const storesScheme = {",
+									"        \"type\": \"object\",",
+									"        \"properties\": {",
+									"                \"total\": {\"type\": \"integer\"},",
+									"                \"limit\": {\"type\": \"integer\"},",
+									"                \"skip\": {\"type\": \"integer\"},",
+									"                \"data\": {\"type\": \"array\"}",
+									"        }",
+									"    };",
+									"    ",
+									"    const isValidScheme = tv4.validate(jsonData, storesScheme, true, true);",
+									"    pm.expect(isValidScheme).to.be.true;",
+									"});",
+									"",
+									"pm.test(\"Stores data is available\", () => {",
+									"    pm.expect(jsonData.data.length).to.not.equal(0);",
+									"});",
+									"",
+									"pm.test(\"Default page limit is correct\", () => {",
+									"    pm.expect(jsonData.limit).to.equal(10);",
+									"});",
+									"",
+									"pm.test(\"Default skip is correct\", () => {",
+									"   pm.expect(jsonData.skip).to.equal(0); ",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3030/services",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"services"
+							]
+						},
+						"description": "Returns all services that match the given filter criteria. If no filters are included, defaults to returning a paginated list of all services."
+					},
+					"response": []
+				},
+				{
+					"name": "Returns all services - limit and skip",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if(data.skip !== 0 && data.limit !== 0) {",
+									"  pm.sendRequest(\"http://localhost:3030/stores\", (err, response) => {",
+									"        const jsonData = response.json();",
+									"        ",
+									"        // Negative value of skip is translated into positive",
+									"        const positiveSkip = Math.abs(data.skip);",
+									"        const expectedFirstId = jsonData.data[positiveSkip].id;",
+									"        pm.environment.set(\"expected_first_id\", expectedFirstId);",
+									"    });  ",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if(data.skip !== 0 && data.limit !== 0) {",
+									"  pm.sendRequest(\"http://localhost:3030/services\", (err, response) => {",
+									"        const jsonData = response.json();",
+									"        ",
+									"        // Negative value of skip is translated into positive",
+									"        const positiveSkip = Math.abs(data.skip);",
+									"        const expectedFirstId = jsonData.data[positiveSkip].id;",
+									"        pm.environment.set(\"expected_first_id\", expectedFirstId);",
+									"    });  ",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3030/services?$limit={{limit}}&$skip={{:skip}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"services"
+							],
+							"query": [
+								{
+									"key": "$limit",
+									"value": "{{limit}}"
+								},
+								{
+									"key": "$skip",
+									"value": "{{:skip}}"
+								}
+							]
+						},
+						"description": "Returns all services that match the given filter criteria. If no filters are included, defaults to returning a paginated list of all services."
+					},
+					"response": []
+				},
+				{
+					"name": "Create a new service",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();",
+									"",
+									"pm.environment.set(\"service_id\", jsonData.id);",
+									"",
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Total number is incremented\", () => {",
+									"    pm.sendRequest(\"http://localhost:3030/services\", function (err, response) {",
+									"       const jsonData = response.json();",
+									"       ",
+									"       const currentNoOfItems = jsonData.total;",
+									"       pm.environment.set(\"total_no_items\", currentNoOfItems);",
+									"       pm.expect(pm.environment.get(\"total_no_items\")).to.equal(currentNoOfItems);",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{      \n\t  \"name\": \"OBE Service\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3030/services",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"services"
+							]
+						},
+						"description": "Creates a new service"
+					},
+					"response": []
+				},
+				{
+					"name": "Return a services based on service ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response data is correct\", () => {",
+									"    const jsonData = pm.response.json();",
+									"   const storeData = {",
+									"       \"properties\": {",
+									"            \"id\": {\"type\": \"integer\"},",
+									"            \"name\": \"OBE Service\",",
+									"            \"createdAt\": {\"type\": \"string\"},",
+									"            \"updatedAt\": {\"type\": \"string\"}",
+									"        }",
+									"   };",
+									"   ",
+									"    const isValidScheme = tv4.validate(jsonData, storeData, true, true);",
+									"    pm.expect(isValidScheme).to.be.true; ",
+									"   ",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3030/services/:id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"services",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{service_id}}"
+								}
+							]
+						},
+						"description": "Returns a services based on service ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Update a services based on service ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response data is correct\", () => {",
+									"    const jsonData = pm.response.json();",
+									"   const storeData = {",
+									"       \"properties\": {",
+									"            \"id\": {\"type\": \"integer\"},",
+									"            \"name\": \"OBE Service\",",
+									"            \"createdAt\": {\"type\": \"string\"},",
+									"            \"updatedAt\": {\"type\": \"string\"}",
+									"       }",
+									"   };",
+									"    const isValidScheme = tv4.validate(jsonData, storeData, true, true);",
+									"    pm.expect(isValidScheme).to.be.true; ",
+									"   ",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"OBE Service Updateds\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3030/services/:id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"services",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{service_id}}"
+								}
+							]
+						},
+						"description": "Updates a services based on service ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a single service based on the ID supplied",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Deleted product cannot be found\", () => {",
+									"    const itemId = pm.environment.get(\"service_id\");",
+									"    pm.sendRequest(`http://localhost:3030/service/${itemId}`, (err, response) => {",
+									"       pm.expect(response).to.have.status(404);",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3030/services/:id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"services",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{service_id}}"
+								}
+							]
+						},
+						"description": "Deletes a single service based on the ID supplied"
+					},
+					"response": []
+				}
+			],
+			"description": "Folder for services"
+		},
+		{
+			"name": "categories",
+			"item": [
+				{
+					"name": "Return all categories",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"if(data.skip !== 0 && data.limit !== 0) {",
+									"  pm.sendRequest(\"http://localhost:3030/categories\", (err, response) => {",
+									"        const jsonData = response.json();",
+									"        ",
+									"        // Negative value of skip is translated into positive",
+									"        const positiveSkip = Math.abs(data.skip);",
+									"        const expectedFirstId = jsonData.data[positiveSkip].id;",
+									"        pm.environment.set(\"expected_first_id\", expectedFirstId);",
+									"    });  ",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if(data.skip !== 0 && data.limit !== 0) {",
+									"  pm.sendRequest(\"http://localhost:3030/categories\", (err, response) => {",
+									"        const jsonData = response.json();",
+									"        ",
+									"        // Negative value of skip is translated into positive",
+									"        const positiveSkip = Math.abs(data.skip);",
+									"        const expectedFirstId = jsonData.data[positiveSkip].id;",
+									"        pm.environment.set(\"expected_first_id\", expectedFirstId);",
+									"    });  ",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3030/categories?$limit={{limit}}&$skip={{skip}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"categories"
+							],
+							"query": [
+								{
+									"key": "$limit",
+									"value": "{{limit}}"
+								},
+								{
+									"key": "$skip",
+									"value": "{{skip}}"
+								}
+							]
+						},
+						"description": "Returns all categories that match the given filter criteria. If no filters are included, defaults to returning a paginated list of all categories."
+					},
+					"response": []
+				},
+				{
+					"name": "Creates a new category",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();",
+									"",
+									"pm.environment.set(\"category_id\", jsonData.id);",
+									"",
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Total number is incremented\", () => {",
+									"    pm.sendRequest(\"http://localhost:3030/categories\", function (err, response) {",
+									"       const jsonData = response.json();",
+									"       ",
+									"       const currentNoOfStores = jsonData.total;",
+									"       pm.environment.set(\"total_no_items\", currentNoOfStores);",
+									"       pm.expect(pm.environment.get(\"total_no_items\")).to.equal(currentNoOfStores);",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"function generateRandomNumber(length) {",
+									"    let number = '';",
+									"    const numbers = '123456789';",
+									"    for (let i = 0; i < length; i += 1) {",
+									"        number += numbers.charAt(Math.floor(Math.random() * numbers.length));",
+									"    }",
+									"    return number;",
+									"}",
+									"",
+									"pm.environment.set(\"random_id\", generateRandomNumber(5));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{      \n\t\"id\": \"{{random_id}}\",\n\t\"name\": \"OBE Category\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3030/categories",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"categories"
+							]
+						},
+						"description": "Creates a new category"
+					},
+					"response": []
+				},
+				{
+					"name": "Returns a categories based on category ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3030/categories/:id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"categories",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{category_id}}"
+								}
+							]
+						},
+						"description": "Returns a categories based on category ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Update a categories based on category ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response data is correct\", () => {",
+									"    const jsonData = pm.response.json();",
+									"   const storeData = {",
+									"       \"properties\": {",
+									"            \"id\": {\"type\": \"string\"},",
+									"            \"name\": \"OBE Category Updated\",",
+									"            \"createdAt\": {\"type\": \"string\"},",
+									"            \"updatedAt\": {\"type\": \"string\"}",
+									"       }",
+									"   };",
+									"    const isValidScheme = tv4.validate(jsonData, storeData, true, true);",
+									"    pm.expect(isValidScheme).to.be.true; ",
+									"   ",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{      \n\t\"name\": \"OBE Category Updated\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3030/categories/:id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"categories",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{category_id}}"
+								}
+							]
+						},
+						"description": "Updates a categories based on category ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Deletes a single category based on the ID supplied",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Deleted product cannot be found\", () => {",
+									"    const itemId = pm.environment.get(\"category_id\");",
+									"    pm.sendRequest(`http://localhost:3030/category/${itemId}`, (err, response) => {",
+									"       pm.expect(response).to.have.status(404);",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3030/categories/:id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"categories",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "{{category_id}}"
+								}
+							]
+						},
+						"description": "Deletes a single category based on the ID supplied"
+					},
+					"response": []
+				}
+			],
+			"description": "Folder for categories"
+		},
+		{
+			"name": "utils",
+			"item": [
+				{
+					"name": "Returns the current version of the API Playground being run",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3030/version",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"version"
+							]
+						},
+						"description": "Returns healthcheck information about the system"
+					},
+					"response": []
+				},
+				{
+					"name": "Returns healthcheck information about the system",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:3030/healthcheck",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3030",
+							"path": [
+								"healthcheck"
+							]
+						},
+						"description": "Returns the current version of the API Playground being run"
+					},
+					"response": []
+				}
+			],
+			"description": "Folder for healthcheck",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		}
+	]
+}

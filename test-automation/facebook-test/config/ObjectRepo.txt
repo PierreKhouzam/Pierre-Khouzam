@@ -1,0 +1,26 @@
+#Login Page Object
+emailInput=//input[@id='email']
+passwordInput=//input[@id='pass']
+loginBtn=//button[@name='login']
+validationText1=//div[text()='Wrong credentials']
+validationText2=//div[@class='_9ay5']/following-sibling::div[1]
+troubleValidationText=//div[contains(@class,'phl ptm')]//strong[1]
+tryAgainBtn=//a[@href='/login.php?lhsrc=h_noacct&lwv=206']
+forgetPasswordLink=//a[contains(text(),'Forgotten password?')]
+createAccountBtn=//a[@data-testid='open-registration-form-button']
+showPasswordToggle=//div[@class='_9lsb _9ls8']
+hidePasswordToggle=//div[@class='_9lsb _9ls9']
+
+#Homepage Object
+homeTab=//span[@class='l9j0dhe7']
+accountTab=//div[@class='j83agx80 l9j0dhe7']
+logoutBtn=//span[contains(text(),'Log Out')]
+
+#Registration Page Object
+signupHeaderLbl=//div[text()='Sign Up']
+signupCancelBtn=//img[@class='_8idr img']
+
+#ForgottenPassword Page Object
+fgtPwdHeaderLbl=(//h2[text()='Find Your Account'])[2]
+fgtPwdInput=(//input[@name='email'])[2]
+fgtPwdCancelBtn=//a[@href='/login.php']

@@ -1,0 +1,6 @@
+limit,skip,name,type,price,shipping,upc,description,manufacturer,model,url,priceUpdated,shippingUpdated
+0,0,"OBE product 1","OBE type",23.67,0,"1234567890123","OBE product description","OBE manufacturer","OBE-model","OBE//URL",24.43,1
+1,1,"OBE product 2","OBE-type",499,1,"123456789012","OBE product description","OBE manufacturer","OBE model","OBE//URL",500,2
+-5,-5,"OBE product 3","OBE type",0,2,"1234567890123","OBE product description","OBE manufacturer","OBE model","OBE//URL",1000000,3
+15,9,"OBE product 4","OBE type",23.6,3,"1234567890123","OBE product description","OBE manufacturer","OBE model","OBE//URL",10,0
+15,9,"OBE product 5","OBE type",23.6,3,"1234567890123","OBE product description","OBE manufacturer","OBE model","OBE//URL",10,0
