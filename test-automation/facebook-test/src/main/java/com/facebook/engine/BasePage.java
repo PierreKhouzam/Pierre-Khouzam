@@ -51,8 +51,12 @@ public class BasePage {
     }
 
     // check element is displayed
-    public Boolean isDisplayed(String object) {
-        return driver.findElement(By.xpath(objectRepo.getProperty(object))).isDisplayed();
+    public static Boolean isDisplayed(String object) {
+        try {
+            driver.findElement(By.xpath(objectRepo.getProperty(object))).isDisplayed();
+        } catch (Exception e) {
+            return false;
+        }
+        return true;
     }
-
 }

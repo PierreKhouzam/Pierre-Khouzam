@@ -23,8 +23,6 @@ public class BaseTest {
         driver = new ChromeDriver(options);
         // maximize window
         driver.manage().window().maximize();
-        // implicit wait
-        driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
         // load object repository
         DriverScript.objectRepoLoad();
     }

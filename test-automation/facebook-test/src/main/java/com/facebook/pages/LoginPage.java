@@ -2,6 +2,7 @@ package com.facebook.pages;
 
 import com.facebook.engine.BasePage;
 import com.facebook.utilities.extent.ExtentTestManager;
+import com.facebook.utilities.screenshots.ScreenshotRobot;
 import com.relevantcodes.extentreports.LogStatus;
 import org.openqa.selenium.WebDriver;
 
@@ -51,38 +52,41 @@ public class LoginPage extends BasePage {
         return new HomePage(driver);
     }
 
-    public void validate(String firstResponseExpected, String secondResponseExpected, String altSecondResponseExpected, String troubleResponseExpected) {
+    //TODO  handle more dynamic failed Facebook login responses
+    public void validate(String firstExpectedResponse, String secondExpectedResponse, String altSecondExpectedResponse, String troubleExpectedResponse) {
         String validationText;
         if (isDisplayed("validationText1")) {
             validationText = readText("validationText1");
             try {
-                softAssert.assertTrue(validationText.contains(firstResponseExpected));
+                softAssert.assertTrue(validationText.contains(firstExpectedResponse));
                 ExtentTestManager.getTest().log(LogStatus.PASS, "Actual text matches the expected text");
             } catch (Exception e) {
                 ExtentTestManager.getTest().log(LogStatus.FAIL,
-                        "Actual text is '" + validationText + "' while expected text should be '" + firstResponseExpected + "'");
+                        "Actual text is '" + validationText + "' while expected text should be '" + firstExpectedResponse + "'");
             }
         } else if (isDisplayed("validationText2")) {
             validationText = readText("validationText2");
             try {
-                softAssert.assertTrue(validationText.contains(secondResponseExpected) || validationText.contains(altSecondResponseExpected));
+                softAssert.assertTrue(validationText.contains(secondExpectedResponse) || validationText.contains(altSecondExpectedResponse));
                 ExtentTestManager.getTest().log(LogStatus.PASS, "Actual text matches the expected text");
             } catch (Exception e) {
                 ExtentTestManager.getTest().log(LogStatus.FAIL,
-                        "Actual text is '" + validationText + "' while expected text should be '" + secondResponseExpected + "' or '" + altSecondResponseExpected);
+                        "Actual text is '" + validationText + "' while expected text should be '" + secondExpectedResponse + "' or '" + altSecondExpectedResponse);
             }
-        } else if (isDisplayed("tryAgainBtn")) {
-            String troubleValidationText = readText("troubleValidationText");
+        } else if (isDisplayed("troubleValidationText")) {
+            validationText = readText("troubleValidationText");
             try {
-                softAssert.assertTrue(troubleValidationText.contains(troubleResponseExpected));
+                softAssert.assertTrue(validationText.contains(troubleExpectedResponse));
                 ExtentTestManager.getTest().log(LogStatus.PASS, "Redirect to trouble logging in page where actual text matches the expected text");
+                ScreenshotRobot.takeScreenShot(driver);
             } catch (Exception e) {
                 ExtentTestManager.getTest().log(LogStatus.FAIL,
-                        "Actual text is '" + troubleValidationText + "' while expected text should be '" + troubleResponseExpected + "'");
+                        "Actual text is '" + validationText + "' while expected text should be '" + troubleExpectedResponse + "'");
+                ScreenshotRobot.takeScreenShot(driver);
             }
             click("tryAgainBtn");
+            ExtentTestManager.getTest().log(LogStatus.PASS, "Click on try again");
         }
-
     }
 
 
